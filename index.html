@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title> </title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous">
+
+</head>
+<body>
+<header>
+
+</header>
+
+<div class="wrapper">
+    <!--<video src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/28831/Typer.mp4" autoplay loop></video>-->
+
+    <video src="ScreenFlow.mp4" autoplay loop></video>
+
+
+</div>
+
+
+<div class="search-box">
+    <input id="search" class="search-text" type="text" name="" placeholder="Type to search">
+
+    <a class="search-btn" href="#" onclick="show()">
+        <i class="fas fa-search"></i>
+    </a>
+
+    <hr>
+    <br>
+    <div><div id="show"></div></div>
+
+
+</div>
+
+
+
+<script src="js/index.js"></script>
+
+<script src=nebulas/nebPay.js></script>
+<script src=nebulas/nebulas.js></script>
+
+<script>
+
+    "use strict";
+
+    var dappAddress = "n1vkEwW8LuNU3NmXJB3SUh8EBCxgBY6wbMF";
+
+    //here we use neb.js to call the "get" function to search iQuote
+    var nebulas = require("nebulas"),
+        Account = nebulas.Account,
+        neb = new nebulas.Neb();
+    neb.setRequest(new nebulas.HttpRequest("https://testnet.nebulas.io"));
+
+    function search() {
+        var from = Account.NewAccount().getAddressString();
+
+        var value = "0";
+        var nonce = "0";
+        var gas_price = "1000000"
+        var gas_limit = "2000000"
+        var callFunction = "get";
+        var arg = document.getElementById('search_value').value;
+        var callArgs = JSON.stringify([arg]);
+        var contract = {
+            "function": callFunction,
+            "args": callArgs
+        };
+
+        neb.api.call(from, dappAddress, value, nonce, gas_price, gas_limit, contract).then(function (resp) {
+            cbSearch(resp)
+        }).catch(function (err) {
+            //cbSearch(err)
+            console.log("error:" + err.message)
+        })
+    }
+
+    //return of search,
+    function cbSearch(resp) {
+        var result = resp.result    ////resp is an object, resp.result is a JSON string
+        console.log("return of rpc call: " + JSON.stringify(result))
+
+        var resultString = JSON.stringify(result);
+        if(resultString.search("key") !== -1 && resultString.search("value") !== -1){
+            result = JSON.parse(result)
+            console.log(result.key);
+            console.log(result.value);
+
+
+            document.getElementById('results').innerHTML = `<h3> ${result.value} </h3> `
+            // console.log(result.author);
+
+        }
+        if(resultString.search('"null"') !== -1){
+            document.getElementById('result').innerHTML = `<h3> Did not find that you sure its on the blockchain? </h3> `
+            console.log(`ant shit here `);
+
+        }
+        if(resultString.search("error") !== -1){
+            console.log(`oh shit an error`);
+
+            console.log(result);
+
+        }
+
+    }
+
+    var NebPay = require("nebpay");
+    var nebPay = new NebPay();
+    var serialNumber
+    var callbackUrl = NebPay.config.testnetUrl;
+
+    function push() {
+
+        var to = dappAddress;
+        var value = "0";
+        var callFunction = "save"
+
+        var arg1 = document.getElementById('name').value;
+        var arg2 = document.getElementById('quote').value;
+        var callArgs = JSON.stringify([arg1, arg2]);
+
+        serialNumber = nebPay.call(to, value, callFunction, callArgs, {
+            listener: cbPush,
+            callback: callbackUrl
+        });
+
+        intervalQuery = setInterval(function () {
+            funcIntervalQuery();
+        }, 10000);
+    }
+
+    var intervalQuery;
+
+    function funcIntervalQuery() {
+        var options = {
+            callback: callbackUrl
+        };
+        nebPay.queryPayInfo(serialNumber,options)   //search transaction result from server (result upload to server by app)
+            .then(function (resp) {
+                console.log("tx result: " + resp)   //resp is a JSON string
+                var respObject = JSON.parse(resp)
+                if(respObject.code === 0){
+                    clearInterval(intervalQuery);
+
+                    // alert(`set ${$("#search_value").val()} succeed!`);
+
+                }
+            })
+            .catch(function (err) {
+                console.log(err);
+            });
+    }
+
+    function cbPush(resp) {
+        console.log("response of push: " + JSON.stringify(resp))
+        var respString = JSON.stringify(resp);
+        if(respString.search("rejected by user") !== -1){
+            clearInterval(intervalQuery)
+            alert(respString)
+        }else if(respString.search("txhash") !== -1){
+            //alert("wait for tx result: " + resp.txhash)
+        }
+    }
+
+</script>
+</body>
+</html>
