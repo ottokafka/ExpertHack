@@ -1,14 +1,14 @@
 
 
-fetch("e.json")
-    .then(function(response) {
-        return response.json();
-    })
-    .then(function(myJson) {
-        console.log(myJson.Sheet1[0]);
-        console.log(myJson.Sheet1[1]);
-        console.log(myJson.Sheet1[2]);
-    });
+// fetch("e.json")
+//     .then(function(response) {
+//         return response.json();
+//     })
+//     .then(function(myJson) {
+//         console.log(myJson.Sheet1[0]);
+//         console.log(myJson.Sheet1[1]);
+//         console.log(myJson.Sheet1[2]);
+//     });
 
 
 function show() {
